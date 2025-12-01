@@ -70,3 +70,27 @@ display_photo()
 
 clock = pygame.time.Clock()
 running = True
+
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:  # ESC kończy program
+                running = False
+            elif event.key == pygame.K_RIGHT:  # Strzałka w prawo - następne zdjęcie
+                next_photo()
+            elif event.key == pygame.K_LEFT:  # Strzałka w lewo - poprzednie zdjęcie
+                if photos:
+                    current_photo_index = (current_photo_index - 1) % len(photos)
+                    display_photo()
+            elif event.key == pygame.K_r:  # R - odśwież teraz
+                fetch_new_photos()
+    
+    schedule.run_pending()
+
+    clock.tick(1)  
+
+print("\nZamykanie programu...")
+pygame.quit()
+print("Program zakończony.")

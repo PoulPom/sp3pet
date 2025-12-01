@@ -60,8 +60,41 @@ def load_images():
     images = []
     for filename in os.listdir(IMG_PATH):
         filepath = os.path.join(IMG_PATH, filename)
-        
-        
+        if os.path.isfile(filepath):
+            try:
+                from PIL import Image
+                size_bytes = os.path.getsize(filepath)
+                upload_time = datetime.fromtimestamp(os.path.getctime(filepath)).isoformat()
+                width, height = 0, 0
+                with Image.open(filepath) as img:
+                    width, height = img.size
+                    image_format = img.format or "Unknown"
+                description = extract_satellite_name(filename)
+                cache_date = extract_date_from_filename(filename)
+                cach_time = cache_date.isoformat() if cache_date else "Unknown"
+                image_info = ImageInfo(
+                    image_id=filename,
+                    filename=filename,
+                    size_bytes=size_bytes,
+                    width=width,
+                    height=height,
+                    format=image_format,
+                    upload_time=upload_time,
+                    cach_time=cach_time,
+                    description=description
+                )
+                images.append(image_info)
+            except Exception as e:
+                print(f"Error processing {filename}: {e}")
+                continue
+    return images
+
+images_store = []
+
+@app.on_event("startup")
+async def startup_event():
+    global images_store
+    images_store = load_images()
 
 @app.get("/")
 async def read_root():
@@ -69,15 +102,30 @@ async def read_root():
 
 @app.get("/get-all-data")
 async def get_all_data():
-    # Placeholder for data retrieval logic
+    
     data = {"data": "This is all the data."}
     return data
 
 @app.get("/get-list")
 async def get_info():
-    # Placeholder for info retrieval logic
-    info = {"info": "This is some information."}
-    return info
+    image_lsit = []
+    for image in images_store:
+        image_lsit.append({
+            "image_id": image.image_id,
+            "filename": image.filename,
+            "size_bytes": image.size_bytes,
+            "width": image.width,
+            "height": image.height,
+            "format": image.format,
+            "upload_time": image.upload_time,
+            "cach_time": image.cach_time,
+            "description": image.description
+        })
+    return {
+        "total": len(image_lsit),
+        "images": image_lsit
+        }
+
 
 @app.get("/get-data-by-id/{item_id}")
 async def get_data_by_id(item_id: int):
@@ -87,6 +135,18 @@ async def get_data_by_id(item_id: int):
 
 @app.get("/get-status")
 async def get_status():
-    # Placeholder for status retrieval logic
-    status = {"status": "Server is running."}
+    length = len(images_store)
+    if length > 0:
+        last_update = images_store[-1].upload_time
+    status = {"status": "Server is running.",
+              "total_images": length,
+              "last_update": last_update if length > 0 else "N/A"
+             }
+    
     return status
+
+@app.post("/reload")
+async def reload_images():
+    """Przeładuj obrazy z folderu."""
+    load_images()
+    return {"message": "Obrazy zostały przeładowane."}
