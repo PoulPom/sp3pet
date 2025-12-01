@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse 
 import re
 import os
+import json
+import base64
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -102,9 +104,35 @@ async def read_root():
 
 @app.get("/get-all-data")
 async def get_all_data():
+    def image_generator():
+        yield b'{"images": ['
+        for idx, image in enumerate(images_store):
+            filepath = os.path.join(IMG_PATH, image.filename)
+            with open(filepath, "rb") as f:
+                image_data = f.read()
+            
+            encoded_image = base64.b64encode(image_data).decode('utf-8')
+            
+            image_json = {
+                "image_id": image.image_id,
+                "filename": image.filename,
+                "size_bytes": image.size_bytes,
+                "width": image.width,
+                "height": image.height,
+                "format": image.format,
+                "upload_time": image.upload_time,
+                "cach_time": image.cach_time,
+                "description": image.description,
+                "image_data": encoded_image
+            }
+            
+            if idx > 0:
+                yield b", "
+            yield json.dumps(image_json).encode('utf-8')
+        
+        yield b']}'
     
-    data = {"data": "This is all the data."}
-    return data
+    return StreamingResponse(image_generator(), media_type="application/json")
 
 @app.get("/get-list")
 async def get_info():
@@ -129,7 +157,6 @@ async def get_info():
 
 @app.get("/get-data-by-id/{item_id}")
 async def get_data_by_id(item_id: int):
-    # Placeholder for data retrieval by ID logic
     data = {"item_id": item_id, "data": f"This is data for item {item_id}."}
     return data
 
