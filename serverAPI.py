@@ -23,7 +23,7 @@ def extract_satellite_name(filename):
     return "Inna satelita"
 
 def extract_date_from_filename(filename):
-    date_pattern = r'(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})'
+    date_pattern = r'(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})' # Tutaj trzeba poprawić patern daty i godziny bo nie pamiętam jaki był :/
     match = re.search(date_pattern, filename)
     if match:
         year, month, day, hour, minute, second = match.groups()
@@ -40,7 +40,7 @@ async def get_all_data():
     data = {"data": "This is all the data."}
     return data
 
-@app.get("/get-info")
+@app.get("/get-list")
 async def get_info():
     # Placeholder for info retrieval logic
     info = {"info": "This is some information."}

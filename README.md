@@ -6,3 +6,5 @@ Biblioteki użyte do obsługi serwera fastAPI, i prezentacji zdjęć satelitarny
     - pygame
     - re
     - datetime
+    - pillow
+    - schedule
