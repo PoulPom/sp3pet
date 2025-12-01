@@ -25,6 +25,7 @@ def check_server_connection():
     except requests.exceptions.RequestException as e:
         print(f"Nie można połączyć z serwerem: {e}")
         return False
+    
 def get_server_status():
     try:
         response = requests.get(f"{SERVER_URL}/get-status")
@@ -42,6 +43,7 @@ def get_server_status():
     except Exception as e:
         print(f"Błąd: {e}")
         return None
+    
 def get_images_list():
     try:
         response = requests.get(f"{SERVER_URL}/get-list")
@@ -55,6 +57,7 @@ def get_images_list():
     except Exception as e:
         print(f"Błąd: {e}")
         return []
+    
 def download_image(image_id, filename):
     try:
         response = requests.get(f"{SERVER_URL}/get-data-by-id/{image_id}")
@@ -71,6 +74,7 @@ def download_image(image_id, filename):
     except Exception as e:
         print(f"Błąd: {e}")
         return False
+    
 def get_all_data():
     try:
         response = requests.get(f"{SERVER_URL}/get-all-data")
