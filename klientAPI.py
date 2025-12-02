@@ -46,7 +46,6 @@ def get_server_status():
         return None
     
 def get_images_list():
-    """Pobiera listę obrazów (tylko metadane, bez danych obrazu)"""
     try:
         response = requests.get(f"{SERVER_URL}/get-list")
         if response.status_code == 200:
@@ -62,7 +61,6 @@ def get_images_list():
         return []
     
 def download_image(image_id, filename):
-    """Pobiera pojedynczy obraz przez sieć (binarnie)"""
     try:
         response = requests.get(f"{SERVER_URL}/get-data-by-id/{image_id}")
         if response.status_code == 200:
@@ -80,7 +78,6 @@ def download_image(image_id, filename):
         return None
     
 def get_all_data():
-    """Pobiera wszystkie obrazy z metadanymi (base64) - PRZEZ SIEĆ"""
     try:
         response = requests.get(f"{SERVER_URL}/get-all-data", timeout=30)
         if response.status_code == 200:
@@ -95,10 +92,8 @@ def get_all_data():
         return None
 
 def download_all_images():
-    """Pobiera wszystkie obrazy PRZEZ SIEĆ i zapisuje lokalnie"""
     create_download_folder()
     
-    # Pobierz listę obrazów
     images_list = get_images_list()
     
     if not images_list:
@@ -110,7 +105,6 @@ def download_all_images():
         image_id = img_info.get("image_id")
         filename = img_info.get("filename")
         
-        # Pobierz obraz PRZEZ SIEĆ
         file_path = download_image(image_id, filename)
         
         if file_path:
@@ -129,7 +123,6 @@ def download_all_images_base64():
     """Alternatywna metoda - pobiera obrazy jako base64 PRZEZ SIEĆ"""
     create_download_folder()
     
-    # Pobierz wszystkie dane (z base64)
     data = get_all_data()
     
     if not data or "images" not in data:
@@ -139,10 +132,8 @@ def download_all_images_base64():
     downloaded = []
     for img in data["images"]:
         try:
-            # Dekoduj base64
             image_data = base64.b64decode(img["image_data"])
             
-            # Zapisz lokalnie
             filename = img["filename"]
             file_path = os.path.join(DOWNLOAD_FOLDER, filename)
             with open(file_path, "wb") as f:

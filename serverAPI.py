@@ -161,7 +161,7 @@ async def get_info():
 
 
 @app.get("/get-data-by-id/{item_id}")
-async def get_data_by_id(item_id: str):  # ✅ str
+async def get_data_by_id(item_id: str): 
     for image in images_store:
         if image.image_id == item_id:
             filepath = os.path.join(IMG_PATH, image.filename)
