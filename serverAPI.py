@@ -32,6 +32,10 @@ def extract_satellite_name(filename):
     patterns = [
         r'Meteor M2 3',
         r'Meteor M2 4',
+        r'Meteor_M2_3',
+        r'Meteor_M2_4',
+        r'METEOR_M2_3',
+        r'METEOR_M2_4',
         r'Meteor-M2-3',
         r'Meteor-M2-4',
         r'Meteor\s*M\s*\d+',
