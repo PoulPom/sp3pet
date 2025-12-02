@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 import json
+import base64
 
 # ===== ZMIENNE GLOBALNE =====
 SERVER_URL = "http://localhost:8000"
@@ -15,7 +16,7 @@ def create_download_folder():
 
 def check_server_connection():
     try:
-        response = requests.get(f"{SERVER_URL}/",timeout=5)
+        response = requests.get(f"{SERVER_URL}/", timeout=5)
         if response.status_code == 200:
             print(f"Połączono z serwerem: {SERVER_URL}")
             return True
@@ -45,11 +46,13 @@ def get_server_status():
         return None
     
 def get_images_list():
+    """Pobiera listę obrazów (tylko metadane, bez danych obrazu)"""
     try:
         response = requests.get(f"{SERVER_URL}/get-list")
         if response.status_code == 200:
-            images = response.json()
-            print(f"Pobrano {len(images)} obrazów z serwera.")
+            data = response.json()
+            images = data.get("images", [])
+            print(f"Pobrano listę {len(images)} obrazów z serwera.")
             return images
         else:
             print(f"Błąd pobierania listy obrazów: {response.status_code}")
@@ -59,6 +62,7 @@ def get_images_list():
         return []
     
 def download_image(image_id, filename):
+    """Pobiera pojedynczy obraz przez sieć (binarnie)"""
     try:
         response = requests.get(f"{SERVER_URL}/get-data-by-id/{image_id}")
         if response.status_code == 200:
@@ -66,21 +70,22 @@ def download_image(image_id, filename):
             file_path = os.path.join(DOWNLOAD_FOLDER, filename)
             with open(file_path, "wb") as f:
                 f.write(image_data)
-            print(f"Pobrano obraz: {file_path}")
-            return True
+            print(f"Pobrano obraz przez sieć: {file_path}")
+            return file_path
         else:
             print(f"Błąd pobierania obrazu {image_id}: {response.status_code}")
-            return False
+            return None
     except Exception as e:
         print(f"Błąd: {e}")
-        return False
+        return None
     
 def get_all_data():
+    """Pobiera wszystkie obrazy z metadanymi (base64) - PRZEZ SIEĆ"""
     try:
-        response = requests.get(f"{SERVER_URL}/get-all-data")
+        response = requests.get(f"{SERVER_URL}/get-all-data", timeout=30)
         if response.status_code == 200:
             data = response.json()
-            print(f"Pobrano wszystkie dane z serwera.")
+            print(f"Pobrano wszystkie dane z serwera przez sieć.")
             return data
         else:
             print(f"Błąd pobierania danych: {response.status_code}")
@@ -89,4 +94,73 @@ def get_all_data():
         print(f"Błąd: {e}")
         return None
 
+def download_all_images():
+    """Pobiera wszystkie obrazy PRZEZ SIEĆ i zapisuje lokalnie"""
+    create_download_folder()
+    
+    # Pobierz listę obrazów
+    images_list = get_images_list()
+    
+    if not images_list:
+        print("Brak obrazów do pobrania")
+        return []
+    
+    downloaded = []
+    for img_info in images_list:
+        image_id = img_info.get("image_id")
+        filename = img_info.get("filename")
+        
+        # Pobierz obraz PRZEZ SIEĆ
+        file_path = download_image(image_id, filename)
+        
+        if file_path:
+            downloaded.append({
+                "filename": filename,
+                "path": file_path,
+                "cach_time": img_info.get("cach_time"),
+                "description": img_info.get("description"),
+                "width": img_info.get("width"),
+                "height": img_info.get("height")
+            })
+    
+    return downloaded
 
+def download_all_images_base64():
+    """Alternatywna metoda - pobiera obrazy jako base64 PRZEZ SIEĆ"""
+    create_download_folder()
+    
+    # Pobierz wszystkie dane (z base64)
+    data = get_all_data()
+    
+    if not data or "images" not in data:
+        print("Brak danych do pobrania")
+        return []
+    
+    downloaded = []
+    for img in data["images"]:
+        try:
+            # Dekoduj base64
+            image_data = base64.b64decode(img["image_data"])
+            
+            # Zapisz lokalnie
+            filename = img["filename"]
+            file_path = os.path.join(DOWNLOAD_FOLDER, filename)
+            with open(file_path, "wb") as f:
+                f.write(image_data)
+            
+            print(f"Pobrano i zapisano: {file_path}")
+            
+            downloaded.append({
+                "filename": filename,
+                "path": file_path,
+                "cach_time": img.get("cach_time"),
+                "description": img.get("description"),
+                "width": img.get("width"),
+                "height": img.get("height")
+            })
+            
+        except Exception as e:
+            print(f"Błąd przetwarzania obrazu {img.get('filename')}: {e}")
+            continue
+    
+    return downloaded

@@ -8,12 +8,11 @@ import sys
 
 AUTHOR = "Stacja Odbiorcza SP3PET"
 
-
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from klientAPI import (
     create_download_folder,
     check_server_connection,
-    get_all_data,
+    download_all_images,
     SERVER_URL,
     DOWNLOAD_FOLDER
 )
@@ -24,7 +23,7 @@ screen_width, screen_height = screen.get_size()
 pygame.display.set_caption("Pętla wyświetlania obrazów z satelity")
 
 photos = []
-currr_photo_inx = 0
+current_photo_index = 0
 
 def get_optimal_font_size(img_width, img_height, text, base_size=50):
     margin = img_width * 0.05  
@@ -34,8 +33,11 @@ def get_optimal_font_size(img_width, img_height, text, base_size=50):
     try:
         font = ImageFont.truetype("arial.ttf", font_size)
     except:
-        font = ImageFont.load_default()
-        return font, font_size
+        try:
+            font = ImageFont.truetype("Arial.ttf", font_size)
+        except:
+            font = ImageFont.load_default()
+            return font, font_size
     
     while font_size > 10:
         bbox = font.getbbox(text)
@@ -48,8 +50,11 @@ def get_optimal_font_size(img_width, img_height, text, base_size=50):
         try:
             font = ImageFont.truetype("arial.ttf", font_size)
         except:
-            font = ImageFont.load_default()
-            break
+            try:
+                font = ImageFont.truetype("Arial.ttf", font_size)
+            except:
+                font = ImageFont.load_default()
+                break
     
     return font, font_size
 
@@ -92,7 +97,7 @@ def add_text_to_image(image_path, cach_time, description, author):
         x_author = (img_width - text_width) // 2
         y_author = img_height - text_height - margin
         draw.text((x_author, y_author), author_text, fill="white", font=font_author, stroke_width=2, stroke_fill="black")
-        
+
         dir_name = os.path.dirname(image_path)
         base_name = os.path.basename(image_path)
         new_filename = f"annotated_{base_name}"
@@ -108,20 +113,41 @@ def add_text_to_image(image_path, cach_time, description, author):
         return None
 
 def initialize():
+    """Inicjalizacja - pobieranie obrazów z serwera PRZEZ SIEĆ"""
     global photos, current_photo_index
-    if not os.path.exists(DOWNLOAD_FOLDER):
-        create_download_folder()
+    
+    print("Inicjalizacja programu...")
+    create_download_folder()
+    
     if not check_server_connection():
-        print("Brak połączenia z serwerem. Kończę działanie.")
-        pygame.quit()
-        sys.exit(1)
-    photos = get_all_data()    
-    return
+        print("OSTRZEŻENIE: Brak połączenia z serwerem!")
+        load_local_images()
+        return
+    
+    print("Pobieranie obrazów z serwera przez sieć...")
+    fetch_new_photos()
+
+def load_local_images():
+    """Ładuje obrazy z cache lokalnego (tryb offline)"""
+    global photos
+    
+    if not os.path.exists(DOWNLOAD_FOLDER):
+        print("Brak lokalnych obrazów")
+        return
+    
+    for filename in os.listdir(DOWNLOAD_FOLDER):
+        if filename.startswith("annotated_"):
+            filepath = os.path.join(DOWNLOAD_FOLDER, filename)
+            if os.path.isfile(filepath) and filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp')):
+                photos.append(filepath)
+    
+    print(f"Załadowano {len(photos)} obrazów z cache lokalnego")
+
 def display_photo():
+    """Wyświetla aktualny obraz na pełnym ekranie"""
     global current_photo_index, photos
     
     if not photos:
-        # Wyświetl czarny ekran z komunikatem
         screen.fill((0, 0, 0))
         font = pygame.font.Font(None, 50)
         text = font.render("Brak obrazów do wyświetlenia", True, (255, 255, 255))
@@ -133,10 +159,10 @@ def display_photo():
     try:
         photo_path = photos[current_photo_index]
         
-        # Wczytaj obraz z PIL i konwertuj na Pygame
+        
         pil_image = Image.open(photo_path)
         
-        # Skaluj obraz do rozmiaru ekranu zachowując proporcje
+    
         img_width, img_height = pil_image.size
         scale = min(screen_width / img_width, screen_height / img_height)
         new_width = int(img_width * scale)
@@ -144,14 +170,12 @@ def display_photo():
         
         pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
         
-        # Konwersja do pygame
         mode = pil_image.mode
         size = pil_image.size
         data = pil_image.tobytes()
         
         pygame_image = pygame.image.fromstring(data, size, mode)
         
-        # Wyświetl na środku ekranu
         screen.fill((0, 0, 0))
         x = (screen_width - new_width) // 2
         y = (screen_height - new_height) // 2
@@ -162,14 +186,17 @@ def display_photo():
         
     except Exception as e:
         print(f"Błąd wyświetlania obrazu: {e}")
-    return
+
 def next_photo():
+    """Przełącz na następny obraz"""
     global current_photo_index
     
     if photos:
         current_photo_index = (current_photo_index + 1) % len(photos)
         display_photo()
+
 def prev_photo():
+    """Przełącz na poprzedni obraz"""
     global current_photo_index
     
     if photos:
@@ -177,11 +204,15 @@ def prev_photo():
         display_photo()
 
 def fetch_new_photos():
+    """Pobierz nowe obrazy z SERWERA PRZEZ SIEĆ"""
     global photos, current_photo_index
-
+    
+    print("\n=== Pobieranie nowych obrazów z serwera przez sieć ===")
+    
     if not check_server_connection():
         print("Brak połączenia z serwerem - pominięto pobieranie")
         return
+    
     if os.path.exists(DOWNLOAD_FOLDER):
         for filename in os.listdir(DOWNLOAD_FOLDER):
             filepath = os.path.join(DOWNLOAD_FOLDER, filename)
@@ -190,11 +221,11 @@ def fetch_new_photos():
                 print(f"Usunięto stary plik: {filename}")
             except Exception as e:
                 print(f"Nie można usunąć {filename}: {e}")
-    downloaded = get_all_data()
+    
+    downloaded = download_all_images()
     
     photos = []
     for img in downloaded:
-        # Dodaj tekst do każdego obrazu
         annotated_path = add_text_to_image(
             img["path"],
             img.get("cach_time", "Unknown"),
@@ -205,7 +236,7 @@ def fetch_new_photos():
         if annotated_path:
             photos.append(annotated_path)
             
-            # Usuń oryginalny plik
+            # Usuń oryginalny plik (bez adnotacji)
             try:
                 os.remove(img["path"])
                 print(f"Usunięto oryginalny plik: {img['path']}")
@@ -213,15 +244,15 @@ def fetch_new_photos():
                 print(f"Nie można usunąć pliku {img['path']}: {e}")
     
     current_photo_index = 0
-    print(f"Pobrano i przetworzono {len(photos)} obrazów")
+    print(f"Pobrano przez sieć i przetworzono {len(photos)} obrazów")
     
     if photos:
         display_photo()
 
-
 schedule.every(90).seconds.do(next_photo)  # 1.5 minuty
 schedule.every(4).hours.do(fetch_new_photos)  # 4 godziny
 
+# Start
 initialize()
 display_photo()
 
@@ -233,21 +264,15 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:  # ESC kończy program
+            if event.key == pygame.K_ESCAPE:
                 running = False
-            elif event.key == pygame.K_RIGHT:  # Strzałka w prawo - następne zdjęcie
+            elif event.key == pygame.K_RIGHT:
                 next_photo()
-            elif event.key == pygame.K_LEFT:  # Strzałka w lewo - poprzednie zdjęcie
-                if photos:
-                    current_photo_index = (current_photo_index - 1) % len(photos)
-                    display_photo()
-            elif event.key == pygame.K_r:  # R - odśwież teraz
+            elif event.key == pygame.K_LEFT:
+                prev_photo()
+            elif event.key == pygame.K_r:
                 fetch_new_photos()
     
     schedule.run_pending()
-
-    clock.tick(1)  
-
-print("\nZamykanie programu...")
+    clock.tick(1)
 pygame.quit()
-print("Program zakończony.")

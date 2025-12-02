@@ -1,9 +1,7 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse 
+from fastapi.responses import StreamingResponse, Response
 import re
 import os
-import json
-import base64
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -108,9 +106,11 @@ async def get_all_data():
         yield b'{"images": ['
         for idx, image in enumerate(images_store):
             filepath = os.path.join(IMG_PATH, image.filename)
+            image_data = None
             with open(filepath, "rb") as f:
                 image_data = f.read()
             
+            import base64
             encoded_image = base64.b64encode(image_data).decode('utf-8')
             
             image_json = {
@@ -126,6 +126,7 @@ async def get_all_data():
                 "image_data": encoded_image
             }
             
+            import json
             if idx > 0:
                 yield b", "
             yield json.dumps(image_json).encode('utf-8')
@@ -156,9 +157,14 @@ async def get_info():
 
 
 @app.get("/get-data-by-id/{item_id}")
-async def get_data_by_id(item_id: int):
-    data = {"item_id": item_id, "data": f"This is data for item {item_id}."}
-    return data
+async def get_data_by_id(item_id: str):  # ✅ str
+    for image in images_store:
+        if image.image_id == item_id:
+            filepath = os.path.join(IMG_PATH, image.filename)
+            with open(filepath, "rb") as f:
+                image_data = f.read()
+            return Response(content=image_data, media_type=f"image/{image.format.lower()}") 
+    raise HTTPException(status_code=404, detail="Obraz nie znaleziony")
 
 @app.get("/get-status")
 async def get_status():
