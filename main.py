@@ -247,7 +247,9 @@ while running:
                 prev_photo()
             elif event.key == pygame.K_r:
                 fetch_new_photos()
-    
+            elif event.key == pygame.K_F12:
+                pygame.image.save(screen, "screenshot.png")
+                print("Zrzut ekranu zapisany jako screenshot.png")
     schedule.run_pending()
     clock.tick(1)
 pygame.quit()
