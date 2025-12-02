@@ -24,7 +24,7 @@ pygame.display.set_caption("Pętla wyświetlania obrazów z satelity")
 photos = []
 current_photo_index = 0
 
-def get_optimal_font_size(img_width, img_height, text, base_size=100):
+def get_optimal_font_size(img_width, img_height, text, base_size=60):
     margin_x = img_width * 0.05
     margin_y = img_height * 0.05  
     max_width = img_width - (2 * margin_x)
