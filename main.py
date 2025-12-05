@@ -226,7 +226,7 @@ def fetch_new_photos():
         display_photo()
 
 schedule.every(90).seconds.do(next_photo)  # 1.5 minuty
-schedule.every(4).hours.do(fetch_new_photos)  # 4 godziny
+schedule.every(8).hours.do(fetch_new_photos)  # 4 godziny
 
 initialize()
 display_photo()
