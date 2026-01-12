@@ -61,7 +61,7 @@ def load_images():
                     with Image.open(image_path) as img:
                         width, height = img.size
                         #print(width,"x", height)
-                        image_format = img.format or "Unknown"
+                        #image_format = img.format or "Unknown"
                 cach_time =  cache_date 
                 image_info = ImageInfo(
                     image_id=filename,
