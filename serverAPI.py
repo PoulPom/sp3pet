@@ -56,7 +56,7 @@ def load_images():
                 size_bytes = os.path.getsize(filepath)
                 upload_time = datetime.fromtimestamp(os.path.getctime(filepath)).isoformat()
                 width, height = 0, 0
-                image_path=os.path.join(filepath, "MSU-MR", "msu_mr_rgb_MSA_corrected_map.png")
+                image_path=os.path.join(filepath, "MSU-MR", "msu_mr_rgb_MSA_corrected.png")
                 if os.path.exists(image_path):
                     with Image.open(image_path) as img:
                         width, height = img.size
