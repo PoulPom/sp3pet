@@ -6,7 +6,7 @@ import json
 import base64
 
 # ===== ZMIENNE GLOBALNE =====
-SERVER_URL = "http://192.168.87.28:8000"
+SERVER_URL = "http://192.168.244.28:8000"
 DOWNLOAD_FOLDER = r".\downloaded_images"
 
 def create_download_folder():
