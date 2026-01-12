@@ -10,7 +10,7 @@ from pydantic import BaseModel
 IMG_PATH = r"/mnt/pendrive/satdump_live"
 #IMG_PATH = r"C:\Users\1\Documents\sutdia\SP3PET\Modernizacja"
 app = FastAPI(title="Serwer Obrazów - API")
-
+image_format = ".png"
 
 class ImageInfo(BaseModel):
     image_id: str
@@ -61,7 +61,7 @@ def load_images():
                     with Image.open(image_path) as img:
                         width, height = img.size
                         #print(width,"x", height)
-                        image_format =".png"
+                        # image_format =".png"
                 cach_time =  cache_date 
                 image_info = ImageInfo(
                     image_id=filename,
